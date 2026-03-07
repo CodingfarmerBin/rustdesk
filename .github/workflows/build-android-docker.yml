@@ -1,0 +1,143 @@
+name: Build Android with Docker
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ master, main ]
+    paths:
+      - 'flutter/**'
+      - 'src/**'
+      - '.docker/**'
+      - '.github/workflows/build-android-docker.yml'
+
+env:
+  RUST_VERSION: "1.75"
+  FLUTTER_VERSION: "3.24.5"
+  NDK_VERSION: "r27c"
+  CARGO_NDK_VERSION: "3.1.2"
+  VCPKG_COMMIT_ID: "120deac3062162151622ca4860575a33844ba10b"
+  VERSION: "1.4.6"
+
+jobs:
+  build-android:
+    name: Build Android APK (${{ matrix.job.target }})
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        job:
+          - { target: aarch64-linux-android, arch: arm64-v8a, ndk_script: ndk_arm64.sh, flutter_arch: android-arm64 }
+          - { target: armv7-linux-androideabi, arch: armeabi-v7a, ndk_script: ndk_arm.sh, flutter_arch: android-arm }
+          - { target: x86_64-linux-android, arch: x86_64, ndk_script: ndk_x64.sh, flutter_arch: android-x64 }
+
+    steps:
+    - name: Export GitHub Actions cache environment variables
+      uses: actions/github-script@v6
+      with:
+        script: |
+          core.exportVariable('ACTIONS_CACHE_URL', process.env.ACTIONS_CACHE_URL || '');
+          core.exportVariable('ACTIONS_RUNTIME_TOKEN', process.env.ACTIONS_RUNTIME_TOKEN || '');
+
+    - name: Checkout source code
+      uses: actions/checkout@v4
+      with:
+        submodules: recursive
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Cache Docker layers
+      uses: actions/cache@v4
+      with:
+        path: /tmp/.buildx-cache
+        key: ${{ runner.os }}-buildx-${{ matrix.job.target }}
+        restore-keys: |
+          ${{ runner.os }}-buildx-
+
+    - name: Build Docker image
+      run: |
+        docker build -t rustdesk-android-builder -f .docker/android-build.dockerfile .
+
+    - name: Cache vcpkg
+      uses: actions/cache@v4
+      with:
+        path: /opt/artifacts/vcpkg
+        key: vcpkg-${{ matrix.job.target }}-${{ env.VCPKG_COMMIT_ID }}
+        restore-keys: |
+          vcpkg-${{ matrix.job.target }}-
+          vcpkg-
+
+    - name: Build with Docker
+      run: |
+        docker run --rm \
+          -v "${GITHUB_WORKSPACE}:/workspace" \
+          -v "${{ github.workspace }}/../vcpkg:/opt/artifacts/vcpkg" \
+          -e ANDROID_NDK_HOME=/opt/android-ndk \
+          -e ANDROID_NDK_ROOT=/opt/android-ndk \
+          -e VCPKG_ROOT=/opt/artifacts/vcpkg \
+          -w /workspace \
+          rustdesk-android-builder \
+          bash -c "
+            # Setup vcpkg
+            cd /opt/artifacts && \
+            if [ ! -d vcpkg ]; then \
+              git clone https://github.com/microsoft/vcpkg.git vcpkg && \
+              cd vcpkg && \
+              git checkout ${{ env.VCPKG_COMMIT_ID }} && \
+              ./bootstrap-vcpkg.sh -disableMetrics; \
+            fi
+
+            # Install vcpkg dependencies
+            case ${{ matrix.job.target }} in
+              aarch64-linux-android) ANDROID_TARGET=arm64-v8a ;;
+              armv7-linux-androideabi) ANDROID_TARGET=armeabi-v7a ;;
+              x86_64-linux-android) ANDROID_TARGET=x86_64 ;;
+            esac
+
+            export VCPKG_ROOT=/opt/artifacts/vcpkg
+            /workspace/flutter/build_android_deps.sh \${ANDROID_TARGET}
+
+            # Install Flutter
+            cd /opt && \
+            wget -q https://storage.googleapis.com/flutter_infra_release/releases/stable/linux/flutter_linux_${{ env.FLUTTER_VERSION }}-stable.tar.xz && \
+            tar xf flutter_linux_${{ env.FLUTTER_VERSION }}-stable.tar.xz && \
+            export PATH=/opt/flutter/bin:\$PATH
+
+            # Patch flutter
+            cd /opt/flutter && \
+            git config --global --add safe.directory '*' && \
+            if [ '${{ env.FLUTTER_VERSION }}' == '3.24.5' ]; then \
+              git apply /workspace/.github/patches/flutter_3.24.4_dropdown_menu_enableFilter.diff || true; \
+            fi
+
+            # Install Rust
+            rustup default stable && \
+            rustup target add ${{ matrix.job.target }} && \
+            cargo install cargo-ndk --version ${{ env.CARGO_NDK_VERSION }} --locked
+
+            # Build RustDesk library
+            cd /workspace && \
+            ./flutter/${{ matrix.job.ndk_script }}
+
+            # Copy library
+            mkdir -p /workspace/flutter/android/app/src/main/jniLibs/${{ matrix.job.arch }}
+            cp /workspace/target/${{ matrix.job.target }}/release/liblibrustdesk.so /workspace/flutter/android/app/src/main/jniLibs/${{ matrix.job.arch }}/librustdesk.so
+
+            # Build Flutter APK
+            export JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64
+            export PATH=/usr/lib/jvm/java-17-openjdk-amd64/bin:\$PATH
+            sed -i 's/org.gradle.jvmargs=-Xmx1024M/org.gradle.jvmargs=-Xmx2g/g' /workspace/flutter/android/gradle.properties
+            sed -i 's/signingConfigs.release/signingConfigs.debug/g' /workspace/flutter/android/app/build.gradle
+
+            cd /workspace/flutter && \
+            flutter build apk --release --target-platform ${{ matrix.job.flutter_arch }} --split-per-abi && \
+            mkdir -p /workspace/output && \
+            mv build/app/outputs/flutter-apk/app-${{ matrix.job.arch }}-release.apk /workspace/output/rustdesk-${{ env.VERSION }}-${{ matrix.job.arch }}.apk
+          "
+
+    - name: Upload APK artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: rustdesk-android-${{ matrix.job.arch }}
+        path: output/*.apk
+        retention-days: 30
