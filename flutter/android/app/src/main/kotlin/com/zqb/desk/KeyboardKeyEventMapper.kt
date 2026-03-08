@@ -1,4 +1,4 @@
-package com.zqb.desk;
+package com.zqb.desk
 import android.view.KeyEvent
 import android.view.KeyCharacterMap
 import hbb.MessageOuterClass.KeyboardMode
