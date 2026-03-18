@@ -395,7 +395,7 @@ impl ClipboardContext {
     }
 
     #[cfg(all(feature = "unix-file-copy-paste", target_os = "linux"))]
-    fn get_file_urls_set_by_rustdesk(data: Vec<ClipboardData>, side: ClipboardSide) -> Vec<String> {
+    fn get_file_urls_set_by_zdesk(data: Vec<ClipboardData>, side: ClipboardSide) -> Vec<String> {
         let exclude_path =
             clipboard::platform::unix::fuse::get_exclude_paths(side == ClipboardSide::Client);
         data.into_iter()
