@@ -53,7 +53,7 @@ pub enum GrabState {
 pub type NotifyMessageBox = fn(String, String, String, String) -> dyn Future<Output = ()>;
 
 // the executable name of the portable version
-pub const PORTABLE_APPNAME_RUNTIME_ENV_KEY: &str = "RUSTDESK_APPNAME";
+pub const PORTABLE_APPNAME_RUNTIME_ENV_KEY: &str = "ZDESK_APPNAME";
 
 pub const PLATFORM_WINDOWS: &str = "Windows";
 pub const PLATFORM_LINUX: &str = "Linux";
@@ -1006,8 +1006,8 @@ pub fn get_app_name() -> String {
 }
 
 #[inline]
-pub fn is_rustdesk() -> bool {
-    hbb_common::config::APP_NAME.read().unwrap().eq("RustDesk")
+pub fn is_zdesk() -> bool {
+    hbb_common::config::APP_NAME.read().unwrap().eq("ZDesk")
 }
 
 #[inline]
@@ -1775,10 +1775,10 @@ impl ThrottledInterval {
     }
 }
 
-pub type RustDeskInterval = ThrottledInterval;
+pub type ZDeskInterval = ThrottledInterval;
 
 #[inline]
-pub fn rustdesk_interval(i: Interval) -> ThrottledInterval {
+pub fn zdesk_interval(i: Interval) -> ThrottledInterval {
     ThrottledInterval::new(i)
 }
 
@@ -1983,7 +1983,7 @@ pub fn get_builtin_option(key: &str) -> String {
 
 #[inline]
 pub fn is_custom_client() -> bool {
-    get_app_name() != "RustDesk"
+    get_app_name() != "ZDesk"
 }
 
 pub fn verify_login(_raw: &str, _id: &str) -> bool {
@@ -2354,7 +2354,7 @@ mod tests {
     // ThrottledInterval tick at the same time as tokio interval, if no sleeps
     #[allow(non_snake_case)]
     #[tokio::test]
-    async fn test_RustDesk_interval() {
+    async fn test_ZDesk_interval() {
         let base_intervals = [interval_maker, interval_at_maker];
         for maker in base_intervals.into_iter() {
             let mut tokio_timer = maker();
@@ -2403,10 +2403,10 @@ mod tests {
     // ThrottledInterval tick less times than tokio interval, if there're sleeps
     #[allow(non_snake_case)]
     #[tokio::test]
-    async fn test_RustDesk_interval_sleep() {
+    async fn test_ZDesk_interval_sleep() {
         let base_intervals = [interval_maker, interval_at_maker];
-        for (i, maker) in base_intervals.into_iter().enumerate() {
-            let mut timer = rustdesk_interval(maker());
+        for i, maker in base_intervals.into_iter().enumerate() {
+            let mut timer = zdesk_interval(maker());
             let mut times = Vec::new();
             sleep(Duration::from_secs(3)).await;
             loop {

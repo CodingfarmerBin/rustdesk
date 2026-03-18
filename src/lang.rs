@@ -16,7 +16,9 @@ mod es;
 mod et;
 mod eu;
 mod fa;
+mod fi;
 mod fr;
+mod ge;
 mod he;
 mod hr;
 mod hu;
@@ -39,14 +41,12 @@ mod sl;
 mod sq;
 mod sr;
 mod sv;
+mod ta;
 mod th;
 mod tr;
 mod tw;
 mod uk;
 mod vi;
-mod ta;
-mod ge;
-mod fi;
 
 pub const LANGS: &[(&str, &str)] = &[
     ("en", "English"),
@@ -181,7 +181,7 @@ pub fn translate_locale(name: String, locale: &str) -> String {
         if let Some(value) = placeholder_value.as_ref() {
             s = s.replace("{}", &value);
         }
-        if !crate::is_rustdesk() {
+        if !crate::is_zdesk() {
             if s.contains("RustDesk")
                 && !name.starts_with("upgrade_rustdesk_server_pro")
                 && name != "powered_by_me"

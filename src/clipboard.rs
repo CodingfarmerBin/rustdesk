@@ -12,7 +12,7 @@ pub const FILE_CLIPBOARD_NAME: &'static str = "file-clipboard";
 pub const CLIPBOARD_INTERVAL: u64 = 333;
 
 // This format is used to store the flag in the clipboard.
-const RUSTDESK_CLIPBOARD_OWNER_FORMAT: &'static str = "dyn.com.rustdesk.owner";
+const ZDESK_CLIPBOARD_OWNER_FORMAT: &'static str = "dyn.com.zdesk.owner";
 
 // Add special format for Excel XML Spreadsheet
 const CLIPBOARD_FORMAT_EXCEL_XML_SPREADSHEET: &'static str = "XML Spreadsheet";
@@ -45,7 +45,7 @@ const SUPPORTED_FORMATS: &[ClipboardFormat] = &[
     #[cfg(feature = "unix-file-copy-paste")]
     ClipboardFormat::FileUrl,
     ClipboardFormat::Special(CLIPBOARD_FORMAT_EXCEL_XML_SPREADSHEET),
-    ClipboardFormat::Special(RUSTDESK_CLIPBOARD_OWNER_FORMAT),
+    ClipboardFormat::Special(ZDESK_CLIPBOARD_OWNER_FORMAT),
 ];
 
 #[cfg(not(target_os = "android"))]
@@ -76,14 +76,14 @@ pub fn check_clipboard(
 }
 
 #[cfg(all(feature = "unix-file-copy-paste", target_os = "macos"))]
-pub fn is_file_url_set_by_rustdesk(url: &Vec<String>) -> bool {
+pub fn is_file_url_set_by_zdesk(url: &Vec<String>) -> bool {
     if url.len() != 1 {
         return false;
     }
     url.iter()
         .next()
         .map(|s| {
-            for prefix in &["file:///tmp/.rustdesk_", "//tmp/.rustdesk_"] {
+            for prefix in &["file:///tmp/.zdesk_", "//tmp/.zdesk_"] {
                 if s.starts_with(prefix) {
                     return s[prefix.len()..].parse::<uuid::Uuid>().is_ok();
                 }
@@ -220,7 +220,7 @@ fn do_update_clipboard_(mut to_update_data: Vec<ClipboardData>, side: ClipboardS
     }
     if let Some(ctx) = ctx.as_mut() {
         to_update_data.push(ClipboardData::Special((
-            RUSTDESK_CLIPBOARD_OWNER_FORMAT.to_owned(),
+            ZDESK_CLIPBOARD_OWNER_FORMAT.to_owned(),
             side.get_owner_data(),
         )));
         if let Err(e) = ctx.set(&to_update_data) {
@@ -339,7 +339,7 @@ impl ClipboardContext {
         if !force {
             for c in data.iter() {
                 if let ClipboardData::Special((s, d)) = c {
-                    if s == RUSTDESK_CLIPBOARD_OWNER_FORMAT && side.is_owner(d) {
+                    if s == ZDESK_CLIPBOARD_OWNER_FORMAT && side.is_owner(d) {
                         return Ok(vec![]);
                     }
                 }
@@ -348,7 +348,7 @@ impl ClipboardContext {
         Ok(data
             .into_iter()
             .filter(|c| match c {
-                ClipboardData::Special((s, _)) => s != RUSTDESK_CLIPBOARD_OWNER_FORMAT,
+                ClipboardData::Special((s, _)) => s != ZDESK_CLIPBOARD_OWNER_FORMAT,
                 // Skip synchronizing empty text to the remote clipboard
                 ClipboardData::Text(text) => !text.is_empty(),
                 _ => true,
@@ -365,7 +365,7 @@ impl ClipboardContext {
         let data = self.get_formats_filter(
             &[
                 ClipboardFormat::FileUrl,
-                ClipboardFormat::Special(RUSTDESK_CLIPBOARD_OWNER_FORMAT),
+                ClipboardFormat::Special(ZDESK_CLIPBOARD_OWNER_FORMAT),
             ],
             side,
             force,
@@ -383,13 +383,10 @@ impl ClipboardContext {
     }
 
     #[cfg(all(feature = "unix-file-copy-paste", target_os = "macos"))]
-    fn get_file_urls_set_by_rustdesk(
-        data: Vec<ClipboardData>,
-        _side: ClipboardSide,
-    ) -> Vec<String> {
+    fn get_file_urls_set_by_zdesk(data: Vec<ClipboardData>, _side: ClipboardSide) -> Vec<String> {
         for item in data.into_iter() {
             if let ClipboardData::FileUrl(urls) = item {
-                if is_file_url_set_by_rustdesk(&urls) {
+                if is_file_url_set_by_zdesk(&urls) {
                     return urls;
                 }
             }
@@ -418,7 +415,7 @@ impl ClipboardContext {
     fn try_empty_clipboard_files(&mut self, side: ClipboardSide) {
         let _lock = ARBOARD_MTX.lock().unwrap();
         if let Ok(data) = self.get_formats(&[ClipboardFormat::FileUrl]) {
-            let urls = Self::get_file_urls_set_by_rustdesk(data, side);
+            let urls = Self::get_file_urls_set_by_zdesk(data, side);
             if !urls.is_empty() {
                 // FIXME:
                 // The host-side clear file clipboard `let _ = self.inner.clear();`,
@@ -432,7 +429,7 @@ impl ClipboardContext {
                 #[cfg(target_os = "macos")]
                 let is_kde_x11 = false;
                 let clear_holder_text = if is_kde_x11 {
-                    "RustDesk placeholder to clear the file clipboard"
+                    "ZDesk placeholder to clear the file clipboard"
                 } else {
                     ""
                 }
@@ -441,7 +438,7 @@ impl ClipboardContext {
                     .set_formats(&[
                         ClipboardData::Text(clear_holder_text),
                         ClipboardData::Special((
-                            RUSTDESK_CLIPBOARD_OWNER_FORMAT.to_owned(),
+                            ZDESK_CLIPBOARD_OWNER_FORMAT.to_owned(),
                             side.get_owner_data(),
                         )),
                     ])
