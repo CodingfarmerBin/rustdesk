@@ -1,10 +1,10 @@
 [package]
 name = "zdesk"
 version = "1.4.6"
-authors = ["rustdesk <info@rustdesk.com>"]
+authors = ["zdesk <info@zdesk.com>"]
 edition = "2021"
 build= "build.rs"
-description = "RustDesk Remote Desktop"
+description = "ZDesk Remote Desktop"
 default-run = "zdesk"
 rust-version = "1.75"
 

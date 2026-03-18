@@ -3,11 +3,14 @@
 <plist version="1.0">
     <dict>
         <key>Label</key>
-        <string>com.carriez.RustDesk_service</string>
-
-	<key>AssociatedBundleIdentifiers</key>
-	<string>com.carriez.rustdesk</string>
-    
+        <string>com.zqb.ZDesk_service</string>
+	<key>Program</key>
+	<string>/Applications/ZDesk.app/Contents/MacOS/service</string>
+	<key>EnvironmentVariables</key>
+	<dict>
+		<key>PATH</key>
+		<string>/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
+	</dict>
         <key>KeepAlive</key>
         <true/>
         <key>ThrottleInterval</key>
@@ -16,15 +19,15 @@
         <array>
         <string>/bin/sh</string>
         <string>-c</string>
-        <string>/Applications/RustDesk.app/Contents/MacOS/service</string>
+        <string>/Applications/ZDesk.app/Contents/MacOS/service</string>
         </array>
         <key>RunAtLoad</key>
         <true/>
         <key>WorkingDirectory</key>
-        <string>/Applications/RustDesk.app/Contents/MacOS/</string>
+        <string>/Applications/ZDesk.app/Contents/MacOS/</string>
         <key>StandardErrorPath</key>
-        <string>/tmp/rustdesk_service.err</string>
+        <string>/tmp/zdesk_service.err</string>
         <key>StandardOutPath</key>
-        <string>/tmp/rustdesk_service.out</string>
+        <string>/tmp/zdesk_service.out</string>
     </dict>
 </plist>
