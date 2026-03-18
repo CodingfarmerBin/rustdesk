@@ -2359,7 +2359,7 @@ mod tests {
         for maker in base_intervals.into_iter() {
             let mut tokio_timer = maker();
             let mut tokio_times = Vec::new();
-            let mut timer = rustdesk_interval(maker());
+            let mut timer = zdesk_interval(maker());
             let mut times = Vec::new();
             loop {
                 tokio::select! {
