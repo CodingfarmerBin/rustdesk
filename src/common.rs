@@ -2405,7 +2405,7 @@ mod tests {
     #[tokio::test]
     async fn test_ZDesk_interval_sleep() {
         let base_intervals = [interval_maker, interval_at_maker];
-        for i, maker in base_intervals.into_iter().enumerate() {
+        for (i, maker) in base_intervals.into_iter().enumerate() {
             let mut timer = zdesk_interval(maker());
             let mut times = Vec::new();
             sleep(Duration::from_secs(3)).await;
