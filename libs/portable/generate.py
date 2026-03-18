@@ -72,7 +72,7 @@ def build_portable(output_folder: str, target: str):
         os.system("cargo build --release")
 
 # Linux: python3 generate.py -f ../rustdesk-portable-packer/test -o . -e ./test/main.py
-# Windows: python3 .\generate.py -f ..\rustdesk\flutter\build\windows\runner\Debug\ -o . -e ..\rustdesk\flutter\build\windows\runner\Debug\rustdesk.exe
+# Windows: python3 .\generate.py -f ..\zdesk\flutter\build\windows\runner\Debug\ -o . -e ..\zdesk\flutter\build\windows\runner\Debug\zdesk.exe
 
 
 if __name__ == '__main__':
