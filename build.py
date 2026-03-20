@@ -254,7 +254,10 @@ def external_resources(flutter, args, res_dir):
     if not features:
         return
 
-    print(f'Build with features {list(features.keys())}')
+    if isinstance(features, dict):
+        print(f'Build with features {list(features.keys())}')
+    else:
+        print(f'Build with features {features}')
     if os.path.isdir(res_dir) and not os.path.islink(res_dir):
         shutil.rmtree(res_dir)
     elif os.path.exists(res_dir):
@@ -518,8 +521,8 @@ def main():
             system2('cargo build --release --features ' + features)
             system2('git checkout src/ui/common.tis')
         system2('strip target/release/zdesk')
-            system2('ln -s res/pacman_install && ln -s res/PKGBUILD')
-            system2('HBB=`pwd` makepkg -f')
+        system2('ln -s res/pacman_install && ln -s res/PKGBUILD')
+        system2('HBB=`pwd` makepkg -f')
         system2('mv rustdesk-%s-0-x86_64.pkg.tar.zst rustdesk-%s-manjaro-arch.pkg.tar.zst' % (
             version, version))
         # pacman -U ./rustdesk.pkg.tar.zst
