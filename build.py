@@ -407,6 +407,7 @@ def build_deb_from_folder(version, binary_folder):
 def build_flutter_dmg(version, features):
     if not skip_cargo:
         system2("cargo build --release --features " + features + " --lib")
+        system2("cargo build --release --bin service --features " + features)
     # dylib is already named libzdesk.dylib by cargo
     os.chdir('flutter')
     system2('flutter build macos --release')

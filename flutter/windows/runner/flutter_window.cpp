@@ -43,7 +43,7 @@ bool FlutterWindow::OnCreate() {
 
   flutter::MethodChannel<> channel(
     flutter_controller_->engine()->messenger(),
-    "org.zdesk.zdesk/host",,,
+    "org.zdesk.zdesk/host",
     &flutter::StandardMethodCodec::GetInstance());
 
   channel.SetMethodCallHandler(
