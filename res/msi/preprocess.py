@@ -458,14 +458,18 @@ def init_global_vars(dist_dir, app_name, args):
     dist_app = dist_dir.joinpath(app_name + ".exe")
 
     def read_process_output(args):
-        process = subprocess.Popen(
-            f"{dist_app} {args}",
-            stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT,
-            shell=True,
-        )
-        output, _ = process.communicate()
-        return output.decode("utf-8").strip()
+        try:
+            process = subprocess.Popen(
+                f"{dist_app} {args}",
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
+                shell=True,
+            )
+            output, _ = process.communicate()
+            return output.decode("utf-8").strip()
+        except Exception as e:
+            print(f"Warning: Failed to execute {dist_app}: {e}")
+            return ""
 
     global g_version
     global g_build_date
@@ -477,16 +481,19 @@ def init_global_vars(dist_dir, app_name, args):
         print(f"Error: version {g_version} not found in {dist_app}")
         return False
     if g_version.count(".") == 2:
-        # https://github.com/dotnet/runtime/blob/5535e31a712343a63f5d7d796cd874e563e5ac14/src/libraries/System.Private.CoreLib/src/System/Version.cs
         if args.revision_version < 0 or args.revision_version > 2147483647:
             raise ValueError(f"Invalid revision version: {args.revision_version}")    
         g_version = f"{g_version}.{args.revision_version}"
 
-    g_build_date = read_process_output("--build-date")
-    build_date_pattern = re.compile(r"\d{4}-\d{2}-\d{2} \d{2}:\d{2}")
-    if not build_date_pattern.match(g_build_date):
-        print(f"Error: build date {g_build_date} not found in {dist_app}")
-        return False
+    try:
+        g_build_date = read_process_output("--build-date")
+        build_date_pattern = re.compile(r"\d{4}-\d{2}-\d{2} \d{2}:\d{2}")
+        if not build_date_pattern.match(g_build_date):
+            print(f"Warning: build date not found in {dist_app}, using current time")
+            g_build_date = datetime.datetime.now().strftime("%Y-%m-%d %H:%M")
+    except Exception as e:
+        print(f"Warning: Failed to get build date: {e}")
+        g_build_date = datetime.datetime.now().strftime("%Y-%m-%d %H:%M")
 
     return True
 
