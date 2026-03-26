@@ -30,6 +30,10 @@ pub(super) fn start_listening() -> ResultType<()> {
     socket.set_read_timeout(Some(std::time::Duration::from_millis(1000)))?;
     log::info!("lan discovery listener started");
     loop {
+        if config::option2bool("stop-service", &Config::get_option("stop-service")) {
+            log::info!("lan discovery listener stopped");
+            break;
+        }
         let mut buf = [0; 2048];
         if let Ok((len, addr)) = socket.recv_from(&mut buf) {
             if let Ok(msg_in) = Message::parse_from_bytes(&buf[0..len]) {
@@ -71,6 +75,7 @@ pub(super) fn start_listening() -> ResultType<()> {
             }
         }
     }
+    Ok(())
 }
 
 #[tokio::main(flavor = "current_thread")]
