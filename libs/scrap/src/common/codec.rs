@@ -113,9 +113,9 @@ pub struct Decoder {
     #[cfg(feature = "vram")]
     h265_vram: Option<VRamDecoder>,
     #[cfg(feature = "mediacodec")]
-    h264_media_codec: MediaCodecDecoder,
+    h264_media_codec: Option<MediaCodecDecoder>,
     #[cfg(feature = "mediacodec")]
-    h265_media_codec: MediaCodecDecoder,
+    h265_media_codec: Option<MediaCodecDecoder>,
     format: CodecFormat,
     valid: bool,
     #[cfg(feature = "hwcodec")]
@@ -658,7 +658,7 @@ impl Decoder {
                     bail!("av1 decoder not available");
                 }
             }
-            #[cfg(any(feature = "hwcodec", feature = "vram"))]
+            #[cfg(any(feature = "hwcodec", feature = "vram", feature = "mediacodec"))]
             video_frame::Union::H264s(h264s) => {
                 *chroma = Some(Chroma::I420);
                 #[cfg(feature = "vram")]
@@ -670,9 +670,13 @@ impl Decoder {
                 if let Some(decoder) = &mut self.h264_ram {
                     return Decoder::handle_hwram_video_frame(decoder, h264s, rgb, &mut self.i420);
                 }
+                #[cfg(feature = "mediacodec")]
+                if let Some(decoder) = &mut self.h264_media_codec {
+                    return Decoder::handle_mediacodec_video_frame(decoder, h264s, rgb);
+                }
                 Err(anyhow!("don't support h264!"))
             }
-            #[cfg(any(feature = "hwcodec", feature = "vram"))]
+            #[cfg(any(feature = "hwcodec", feature = "vram", feature = "mediacodec"))]
             video_frame::Union::H265s(h265s) => {
                 *chroma = Some(Chroma::I420);
                 #[cfg(feature = "vram")]
@@ -684,25 +688,11 @@ impl Decoder {
                 if let Some(decoder) = &mut self.h265_ram {
                     return Decoder::handle_hwram_video_frame(decoder, h265s, rgb, &mut self.i420);
                 }
-                Err(anyhow!("don't support h265!"))
-            }
-            #[cfg(feature = "mediacodec")]
-            video_frame::Union::H264s(h264s) => {
-                *chroma = Some(Chroma::I420);
-                if let Some(decoder) = &mut self.h264_media_codec {
-                    Decoder::handle_mediacodec_video_frame(decoder, h264s, rgb)
-                } else {
-                    Err(anyhow!("don't support h264!"))
-                }
-            }
-            #[cfg(feature = "mediacodec")]
-            video_frame::Union::H265s(h265s) => {
-                *chroma = Some(Chroma::I420);
+                #[cfg(feature = "mediacodec")]
                 if let Some(decoder) = &mut self.h265_media_codec {
-                    Decoder::handle_mediacodec_video_frame(decoder, h265s, rgb)
-                } else {
-                    Err(anyhow!("don't support h265!"))
+                    return Decoder::handle_mediacodec_video_frame(decoder, h265s, rgb);
                 }
+                Err(anyhow!("don't support h265!"))
             }
             _ => Err(anyhow!("unsupported video frame type!")),
         }
