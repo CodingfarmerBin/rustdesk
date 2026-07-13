@@ -405,7 +405,7 @@ class MainService : Service() {
     }
 
     fun startCapture(): Boolean {
-        if (isStart) {
+        if (isStart && imageReader != null) {
             return true
         }
         if (mediaProjection == null) {
