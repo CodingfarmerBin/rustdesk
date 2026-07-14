@@ -381,13 +381,14 @@ class MainService : Service() {
                         try {
                             // If not call acquireLatestImage, listener will not be called again
                             imageReader.acquireLatestImage().use { image ->
-                                if (image == null || !isStart) return@setOnImageAvailableListener
+                                if (image == null) return@setOnImageAvailableListener
                                 val planes = image.planes
                                 val buffer = planes[0].buffer
                                 buffer.rewind()
                                 FFI.onVideoFrameUpdate(buffer)
                             }
-                        } catch (ignored: java.lang.Exception) {
+                        } catch (e: java.lang.Exception) {
+                            Log.e(logTag, "onImageAvailable error: ${e.message}")
                         }
                     }, serviceHandler)
                 }
@@ -405,17 +406,19 @@ class MainService : Service() {
     }
 
     fun startCapture(): Boolean {
+        Log.e(logTag, "startCapture called, isStart=$isStart, imageReader=$imageReader, mediaProjection=$mediaProjection")
         if (isStart && imageReader != null) {
             return true
         }
         if (mediaProjection == null) {
-            Log.w(logTag, "startCapture fail,mediaProjection is null")
+            Log.e(logTag, "startCapture fail,mediaProjection is null")
             return false
         }
         
         updateScreenInfo(resources.configuration.orientation)
-        Log.d(logTag, "Start Capture")
+        Log.e(logTag, "Start Capture, screen: ${SCREEN_INFO.width}x${SCREEN_INFO.height}")
         surface = createSurface()
+        Log.e(logTag, "createSurface result: surface=$surface")
 
         if (useVP9) {
             startVP9VideoRecorder(mediaProjection!!)
@@ -425,15 +428,16 @@ class MainService : Service() {
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
             if (!audioRecordHandle.createAudioRecorder(false, mediaProjection)) {
-                Log.d(logTag, "createAudioRecorder fail")
+                Log.e(logTag, "createAudioRecorder fail")
             } else {
-                Log.d(logTag, "audio recorder start")
+                Log.e(logTag, "audio recorder start")
                 audioRecordHandle.startAudioRecorder()
             }
         }
         checkMediaPermission()
         _isStart = true
         FFI.setFrameRawEnable("video",true)
+        Log.e(logTag, "startCapture done, isStart=$isStart")
         MainActivity.rdClipboardManager?.setCaptureStarted(_isStart)
         return true
     }
@@ -543,8 +547,8 @@ class MainService : Service() {
             } ?: let {
                 virtualDisplay = mp.createVirtualDisplay(
                     "ZDeskVD",
-                    SCREEN_INFO.width, SCREEN_INFO.height, SCREEN_INFO.dpi, 
-                    VIRTUAL_DISPLAY_FLAG_AUTO_MIRROR or VIRTUAL_DISPLAY_FLAG_SECURE,
+                    SCREEN_INFO.width, SCREEN_INFO.height, SCREEN_INFO.dpi,
+                    VIRTUAL_DISPLAY_FLAG_AUTO_MIRROR,
                     s, null, null
                 )
             }
