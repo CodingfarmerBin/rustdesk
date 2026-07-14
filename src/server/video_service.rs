@@ -1070,6 +1070,12 @@ fn get_recorder(
 fn check_change_scale(hardware: bool) -> ResultType<()> {
     use hbb_common::config::keys::OPTION_ENABLE_ANDROID_SOFTWARE_ENCODING_HALF_SCALE as SCALE_SOFT;
 
+    // Trigger start_capture via IPC directly, not relying on Flutter MethodChannel
+    #[cfg(target_os = "android")]
+    {
+        scrap::android::call_main_service_set_by_name("start_capture", None, None).ok();
+    }
+
     // isStart flag is set at the end of startCapture() in Android, wait it to be set.
     let n = 60; // 3s
     for i in 0..n {

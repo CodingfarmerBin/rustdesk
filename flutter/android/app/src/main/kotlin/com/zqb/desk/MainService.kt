@@ -176,6 +176,10 @@ class MainService : Service() {
                 Log.d(logTag, "from rust:stop_capture")
                 stopCapture()
             }
+            "start_capture" -> {
+                Log.e(logTag, "from rust:start_capture")
+                startCapture()
+            }
             "half_scale" -> {
                 val halfScale = arg1.toBoolean()
                 if (isHalfScale != halfScale) {
