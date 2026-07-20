@@ -1076,17 +1076,21 @@ fn check_change_scale(hardware: bool) -> ResultType<()> {
         scrap::android::call_main_service_set_by_name("start_capture", None, None).ok();
     }
 
-    // isStart flag is set at the end of startCapture() in Android, wait it to be set.
-    let n = 60; // 3s
-    for i in 0..n {
-        if scrap::is_start() == Some(true) {
-            log::info!("start flag is set");
-            break;
-        }
-        log::info!("wait for start, {i}");
-        std::thread::sleep(Duration::from_millis(50));
-        if i == n - 1 {
-            log::error!("wait for start timeout");
+    // Wait briefly for isStart, but don't block if it never comes.
+    // The video loop will retry get_video_raw() which returns WouldBlock until startCapture() runs.
+    #[cfg(target_os = "android")]
+    {
+        let n = 10; // 500ms
+        for i in 0..n {
+            if scrap::is_start() == Some(true) {
+                log::info!("start flag is set");
+                break;
+            }
+            log::info!("wait for start, {i}");
+            std::thread::sleep(Duration::from_millis(50));
+            if i == n - 1 {
+                log::error!("wait for start timeout, continue anyway");
+            }
         }
     }
     let screen_size = scrap::screen_size();

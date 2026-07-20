@@ -105,6 +105,10 @@ class MainService : Service() {
                 }.toString()
             }
             "is_start" -> {
+                if (!isStart && mediaProjection != null) {
+                    Log.e(logTag, "auto startCapture from is_start check")
+                    startCapture()
+                }
                 isStart.toString()
             }
             else -> ""

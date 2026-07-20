@@ -716,19 +716,23 @@ class InputService : AccessibilityService() {
     override fun onServiceConnected() {
         super.onServiceConnected()
         ctx = this
-        val info = AccessibilityServiceInfo()
-        if (Build.VERSION.SDK_INT >= 33) {
-            info.flags = FLAG_INPUT_METHOD_EDITOR or FLAG_RETRIEVE_INTERACTIVE_WINDOWS
-        } else {
-            info.flags = FLAG_RETRIEVE_INTERACTIVE_WINDOWS
+        try {
+            val info = AccessibilityServiceInfo()
+            if (Build.VERSION.SDK_INT >= 33) {
+                info.flags = FLAG_INPUT_METHOD_EDITOR or FLAG_RETRIEVE_INTERACTIVE_WINDOWS
+            } else {
+                info.flags = FLAG_RETRIEVE_INTERACTIVE_WINDOWS
+            }
+            setServiceInfo(info)
+            fakeEditTextForTextStateCalculation = EditText(this)
+            // Size here doesn't matter, we won't show this view.
+            fakeEditTextForTextStateCalculation?.layoutParams = LayoutParams(100, 100)
+            fakeEditTextForTextStateCalculation?.onPreDraw()
+            val layout = fakeEditTextForTextStateCalculation?.getLayout()
+            Log.d(logTag, "fakeEditTextForTextStateCalculation layout:$layout")
+        } catch (e: Exception) {
+            Log.e(logTag, "onServiceConnected error: ${e.message}")
         }
-        setServiceInfo(info)
-        fakeEditTextForTextStateCalculation = EditText(this)
-        // Size here doesn't matter, we won't show this view.
-        fakeEditTextForTextStateCalculation?.layoutParams = LayoutParams(100, 100)
-        fakeEditTextForTextStateCalculation?.onPreDraw()
-        val layout = fakeEditTextForTextStateCalculation?.getLayout()
-        Log.d(logTag, "fakeEditTextForTextStateCalculation layout:$layout")
         Log.d(logTag, "onServiceConnected!")
     }
 
