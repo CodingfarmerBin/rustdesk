@@ -409,6 +409,7 @@ class MainService : Service() {
         return audioRecordHandle.onVoiceCallClosed(mediaProjection)
     }
 
+    @Synchronized
     fun startCapture(): Boolean {
         Log.e(logTag, "startCapture called, isStart=$isStart, imageReader=$imageReader, mediaProjection=$mediaProjection")
         if (isStart && imageReader != null) {
